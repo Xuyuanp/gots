@@ -51,7 +51,7 @@ var AllowedAPI = map[string]bool{
 const (
 	HeaderOTSDate         = "x-ots-date"
 	HeaderOTSAPIVersion   = "x-ots-apiversion"
-	HeaderOTSAccessID     = "x-ots-accessid"
+	HeaderOTSAccessKeyID  = "x-ots-accesskeyid"
 	HeaderOTSInstanceName = "x-ots-instancename"
 	HeaderOTSContentMd5   = "x-ots-contentmd5"
 	HeaderOTSSignature    = "x-ots-signature"
@@ -59,6 +59,8 @@ const (
 	HeaderOTSContentType  = "x-ots-contenttype"
 
 	DefaultAPIVersion = "2014-08-08"
+
+	TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
 )
 
 type Protocol struct {
@@ -73,7 +75,7 @@ func (p *Protocol) headerString(headers map[string]string) string {
 	index := 0
 	for k, v := range headers {
 		k = strings.ToLower(k)
-		if strings.HasPrefix(k, "x-ots") {
+		if strings.HasPrefix(k, "x-ots-") && k != HeaderOTSSignature {
 			otsHeaders[index] = fmt.Sprintf("%s:%s", k, strings.TrimSpace(v))
 			index++
 		}
@@ -84,24 +86,30 @@ func (p *Protocol) headerString(headers map[string]string) string {
 	return headerString
 }
 
-func (p *Protocol) makeSignature(query string, headers map[string]string) string {
-	stringToSign := query + "\n" + "PORT" + "\n\n" + p.headerString(headers) + "\n"
+func (p *Protocol) calculateSignature(signatureString string) string {
 	h := hmac.New(sha1.New, []byte(p.AccessKey))
-	signature := base64.StdEncoding.EncodeToString(h.Sum([]byte(stringToSign)))
+	h.Write([]byte(signatureString))
+	signature := base64.StdEncoding.EncodeToString(h.Sum(nil))
+	return signature
+}
+
+func (p *Protocol) makeSignature(query string, headers map[string]string) string {
+	stringToSign := query + "\n" + "POST" + "\n\n" + p.headerString(headers) + "\n"
+	signature := p.calculateSignature(stringToSign)
 	return signature
 }
 
 func (p *Protocol) makeHeaders(query string, body []byte) map[string]string {
 	m := md5.Sum(body)
 	basemd5 := base64.StdEncoding.EncodeToString(m[:])
-	date := time.Now().Format(time.RFC822)
+	date := time.Now().UTC().Format(TimeFormat)
 
 	headers := map[string]string{
 		HeaderOTSDate:         date,
 		HeaderOTSAPIVersion:   DefaultAPIVersion,
 		HeaderOTSInstanceName: p.InstanceName,
 		HeaderOTSContentMd5:   basemd5,
-		HeaderOTSAccessID:     p.AccessID,
+		HeaderOTSAccessKeyID:  p.AccessID,
 	}
 
 	signature := p.makeSignature(query, headers)
@@ -118,7 +126,7 @@ func (p *Protocol) MakeRequest(apiName string, body []byte) (*http.Request, erro
 	headers := p.makeHeaders(query, body)
 
 	rd := bytes.NewReader(body)
-	request, err := http.NewRequest("POST", p.EndPoint, rd)
+	request, err := http.NewRequest("POST", p.EndPoint+query, rd)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +137,7 @@ func (p *Protocol) MakeRequest(apiName string, body []byte) (*http.Request, erro
 	return request, nil
 }
 
-func (p *Protocol) checkHeaders(headers http.Header, body []byte) error {
+func (p *Protocol) checkHeaders(headers map[string]string, body []byte) error {
 	headerNames := []string{
 		HeaderOTSDate,
 		HeaderOTSContentMd5,
@@ -145,11 +153,12 @@ func (p *Protocol) checkHeaders(headers http.Header, body []byte) error {
 	m := md5.Sum(body)
 	basemd5 := base64.StdEncoding.EncodeToString(m[:])
 
-	if headers.Get(HeaderOTSContentMd5) != basemd5 {
+	if bm, _ := headers[HeaderOTSContentMd5]; bm != basemd5 {
 		return &OTSClientError{Message: "MD5 mismatch in response"}
 	}
 
-	serverTime, err := time.Parse(time.RFC822, headers.Get(HeaderOTSDate))
+	date, _ := headers[HeaderOTSDate]
+	serverTime, err := time.Parse(TimeFormat, date)
 	if err != nil {
 		return &OTSClientError{Message: "Invalid date format in response"}
 	}
@@ -163,7 +172,33 @@ func (p *Protocol) checkHeaders(headers http.Header, body []byte) error {
 	return nil
 }
 
-func (p *Protocol) checkAuthorization(apiName string, headers http.Header) error {
+func (p *Protocol) makeResponseSignature(query string, headers map[string]string) string {
+	headerString := p.headerString(headers)
+	signatureString := headerString + "\n" + query
+	signature := p.calculateSignature(signatureString)
+	return signature
+}
+
+func (p *Protocol) checkAuthorization(query string, headers map[string]string) error {
+	auth, ok := headers["authorization"]
+	if !ok {
+		return &OTSClientError{Message: `"Authorization" is missing in response header`}
+	}
+	if !strings.HasPrefix(auth, "OTS ") {
+		return &OTSClientError{Message: `Invalid Authorization in response`}
+	}
+	auths := strings.SplitN(auth[4:], ":", 2)
+	if len(auths) < 2 {
+		return &OTSClientError{Message: `Invalid Authorization in response`}
+	}
+	accessid := auths[0]
+	signature := auths[1]
+	if accessid != p.AccessID {
+		return &OTSClientError{Message: `Invalid AccessID in response`}
+	}
+	if signature != p.makeResponseSignature(query, headers) {
+		return &OTSClientError{Message: `Invalid signature in response`}
+	}
 	return nil
 }
 
@@ -175,14 +210,22 @@ func (p *Protocol) ParseResponse(apiName string, response *http.Response) (data 
 	defer response.Body.Close()
 	data, err = ioutil.ReadAll(response.Body)
 
+	query := "/" + apiName
+
 	headers := response.Header
-	if err = p.checkHeaders(headers, data); err != nil {
+	newHeaders := make(map[string]string, len(headers))
+	for k, _ := range headers {
+		lk := strings.ToLower(k)
+		newHeaders[lk] = headers.Get(k)
+	}
+
+	if err = p.checkHeaders(newHeaders, data); err != nil {
 		return nil, err
 	}
 
 	status := response.StatusCode
 	if status != 403 {
-		if err = p.checkAuthorization(apiName, headers); err != nil {
+		if err = p.checkAuthorization(query, newHeaders); err != nil {
 			return nil, &OTSClientError{Message: fmt.Sprintf("%s HTTP status: %d", err.Error(), status)}
 		}
 	}
@@ -201,7 +244,7 @@ func (p *Protocol) ParseResponse(apiName string, response *http.Response) (data 
 	errorMessage := pbError.GetMessage()
 
 	if status == 403 && errorCode != "OTSAuthFailed" {
-		authError := p.checkAuthorization(apiName, headers)
+		authError := p.checkAuthorization(query, newHeaders)
 		if authError != nil {
 			return nil, &OTSClientError{Status: status, Message: fmt.Sprintf("%s HTTP status: %d", authError.Error(), status)}
 		}

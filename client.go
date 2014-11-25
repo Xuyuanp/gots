@@ -19,6 +19,8 @@ package gots
 import (
 	"log"
 	"net/http"
+
+	"github.com/golang/protobuf/proto"
 )
 
 const (
@@ -56,10 +58,22 @@ func NewClient(endPoint, accessID, accessKey, instanceName string) *Client {
 }
 
 func (c *Client) Init() error {
+	c.protocol = &Protocol{
+		EndPoint:     c.EndPoint,
+		AccessID:     c.AccessID,
+		AccessKey:    c.AccessKey,
+		InstanceName: c.InstanceName,
+	}
+	c.encoder = &Encoder{}
+	c.decoder = &Decoder{}
 	return nil
 }
 
-func (c *Client) Visit(apiName string, body []byte) (data []byte, err error) {
+func (c *Client) Visit(apiName string, message proto.Message) (data []byte, err error) {
+	body, err := proto.Marshal(message)
+	if err != nil {
+		return nil, err
+	}
 	req, err := c.protocol.MakeRequest(apiName, body)
 	if err != nil {
 		return nil, err
@@ -72,11 +86,11 @@ func (c *Client) Visit(apiName string, body []byte) (data []byte, err error) {
 }
 
 func (c *Client) ListTable() (names []string, err error) {
-	body, err := c.encoder.EncodeListTable()
+	message, err := c.encoder.EncodeListTable()
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("ListTable", body)
+	data, err := c.Visit("ListTable", message)
 	if err != nil {
 		return nil, err
 	}
@@ -123,10 +137,12 @@ func (c *Client) BatchWriteRow(batchList []map[string]interface{}) (items []map[
 	return nil, nil
 }
 
-func (c *Client) GetRange(name string, direction Direction, incStartPrimaryKey *PrimaryKey, excEndPrimaryKey *PrimaryKey, colums []string, limit int) (consumed *CapacityUnit, next []*PrimaryKey, rows []interface{}, err error) {
+func (c *Client) GetRange(name string, direction Direction, incStartPrimaryKey *PrimaryKey, excEndPrimaryKey *PrimaryKey,
+	colums []string, limit int) (consumed *CapacityUnit, next []*PrimaryKey, rows []interface{}, err error) {
 	return nil, nil, nil, nil
 }
 
-func (c *Client) XGetRange(name string, direction Direction, incStartPrimaryKey *PrimaryKey, excEndPrimaryKey *PrimaryKey, consumedCounter *CapacityUnit, colums []string, limit int) (consumed *CapacityUnit, next []*PrimaryKey, rows []interface{}, err error) {
+func (c *Client) XGetRange(name string, direction Direction, incStartPrimaryKey *PrimaryKey, excEndPrimaryKey *PrimaryKey,
+	consumedCounter *CapacityUnit, colums []string, limit int) (consumed *CapacityUnit, next []*PrimaryKey, rows []interface{}, err error) {
 	return nil, nil, nil, nil
 }

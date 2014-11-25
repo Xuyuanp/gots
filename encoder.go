@@ -24,8 +24,7 @@ import (
 type Encoder struct {
 }
 
-func (e *Encoder) EncodeListTable() ([]byte, error) {
+func (e *Encoder) EncodeListTable() (proto.Message, error) {
 	listTableRequest := &protobuf.ListTableRequest{}
-	data, err := proto.Marshal(listTableRequest)
-	return data, err
+	return listTableRequest, nil
 }

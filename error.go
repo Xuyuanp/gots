@@ -35,5 +35,5 @@ type OTSServiceError struct {
 }
 
 func (e *OTSServiceError) Error() string {
-	return fmt.Sprintf("ErrorCode: %d, ErrorMessage: %s, RequestID: %s", e.Code, e.Message, e.RequestID)
+	return fmt.Sprintf("ErrorCode: %s, ErrorMessage: %s, RequestID: %s", e.Code, e.Message, e.RequestID)
 }
