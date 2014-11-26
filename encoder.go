@@ -42,3 +42,11 @@ func (e *Encoder) EncodeUpdateTable(name string, rt *ReservedThroughput) (proto.
 	updateTableRequest.ReservedThroughput = rt.Unparse()
 	return updateTableRequest, nil
 }
+
+func (e *Encoder) EncodeCreateTable(tm *TableMeta, rt *ReservedThroughput) (proto.Message, error) {
+	createTableRequest := &protobuf.CreateTableRequest{
+		TableMeta:          tm.Unparse(),
+		ReservedThroughput: rt.Unparse(),
+	}
+	return createTableRequest, nil
+}

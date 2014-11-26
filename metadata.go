@@ -113,6 +113,17 @@ type ColumnSchema struct {
 	Type ColumnType
 }
 
+func (cs *ColumnSchema) Unparse() *protobuf.ColumnSchema {
+	name := new(string)
+	*name = cs.Name
+	ctype := new(protobuf.ColumnType)
+	*ctype = protobuf.ColumnType(cs.Type)
+	return &protobuf.ColumnSchema{
+		Name: name,
+		Type: ctype,
+	}
+}
+
 func (cs *ColumnSchema) Parse(pbCS *protobuf.ColumnSchema) *ColumnSchema {
 	cs.Name = pbCS.GetName()
 	cs.Type = ColumnType(pbCS.GetType())
@@ -150,6 +161,19 @@ func (tm *TableMeta) Parse(pbTM *protobuf.TableMeta) *TableMeta {
 		tm.PrimaryKey[i] = (&ColumnSchema{}).Parse(pbCS)
 	}
 	return tm
+}
+
+func (tm *TableMeta) Unparse() *protobuf.TableMeta {
+	name := new(string)
+	*name = tm.TableName
+	schemas := make([]*protobuf.ColumnSchema, len(tm.PrimaryKey))
+	for i, s := range tm.PrimaryKey {
+		schemas[i] = s.Unparse()
+	}
+	return &protobuf.TableMeta{
+		TableName:  name,
+		PrimaryKey: schemas,
+	}
 }
 
 type CapacityUnit struct {
@@ -208,6 +232,10 @@ type ConsumedCapacity struct {
 }
 
 type CreateTableResponse struct {
+}
+
+func (ctr *CreateTableResponse) Parse(pbCTR *protobuf.CreateTableResponse) *CreateTableResponse {
+	return ctr
 }
 
 type UpdateTableResponse struct {

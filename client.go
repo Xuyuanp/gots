@@ -116,8 +116,16 @@ func (c *Client) ListTable() (names []string, err error) {
 	return c.decoder.DecodeListTable(data)
 }
 
-func (c *Client) CreateTable(meta *TableMeta, reservedThroughput *ReservedThroughput) error {
-	return nil
+func (c *Client) CreateTable(meta *TableMeta, rt *ReservedThroughput) (*CreateTableResponse, error) {
+	message, err := c.encoder.EncodeCreateTable(meta, rt)
+	if err != nil {
+		return nil, err
+	}
+	data, err := c.Visit("CreateTable", message)
+	if err != nil {
+		return nil, err
+	}
+	return c.decoder.DecodeCreateTable(data)
 }
 
 func (c *Client) DeleteTable(name string) error {
