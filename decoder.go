@@ -22,6 +22,7 @@ import (
 )
 
 type Decoder struct {
+	encoding string
 }
 
 func (d *Decoder) DecodeListTable(data []byte) ([]string, error) {
@@ -31,4 +32,26 @@ func (d *Decoder) DecodeListTable(data []byte) ([]string, error) {
 		return nil, err
 	}
 	return listTableResponse.GetTableNames(), nil
+}
+
+func (d *Decoder) DecodeDescribeTable(data []byte) (*TableMeta, *ReservedThoughputDetails, error) {
+	pbDTR := protobuf.DescribeTableResponse{}
+	err := proto.Unmarshal(data, &pbDTR)
+	if err != nil {
+		return nil, nil, err
+	}
+	tm := (&TableMeta{}).Parse(pbDTR.GetTableMeta())
+	pbRTD := pbDTR.GetReservedThroughputDetails()
+	rtd := (&ReservedThoughputDetails{}).Parse(pbRTD)
+	return tm, rtd, nil
+}
+
+func (d *Decoder) DecodeUpdateTable(data []byte) (*UpdateTableResponse, error) {
+	pbUTR := protobuf.UpdateTableResponse{}
+	err := proto.Unmarshal(data, &pbUTR)
+	if err != nil {
+		return nil, err
+	}
+	upr := (&UpdateTableResponse{}).Parse(&pbUTR)
+	return upr, nil
 }

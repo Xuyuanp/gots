@@ -23,7 +23,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"sort"
 	"strings"
@@ -202,55 +201,44 @@ func (p *Protocol) checkAuthorization(query string, headers map[string]string) e
 	return nil
 }
 
-func (p *Protocol) ParseResponse(apiName string, response *http.Response) (data []byte, err error) {
+func (p *Protocol) ParseResponse(apiName string, status int, headers map[string]string, data []byte) error {
 	if _, ok := AllowedAPI[apiName]; !ok {
-		return nil, &OTSClientError{Message: fmt.Sprintf("API %s is not supported", apiName)}
+		return &OTSClientError{Message: fmt.Sprintf("API %s is not supported", apiName)}
 	}
-
-	defer response.Body.Close()
-	data, err = ioutil.ReadAll(response.Body)
 
 	query := "/" + apiName
 
-	headers := response.Header
-	newHeaders := make(map[string]string, len(headers))
-	for k, _ := range headers {
-		lk := strings.ToLower(k)
-		newHeaders[lk] = headers.Get(k)
+	if err := p.checkHeaders(headers, data); err != nil {
+		return err
 	}
 
-	if err = p.checkHeaders(newHeaders, data); err != nil {
-		return nil, err
-	}
-
-	status := response.StatusCode
 	if status != 403 {
-		if err = p.checkAuthorization(query, newHeaders); err != nil {
-			return nil, &OTSClientError{Message: fmt.Sprintf("%s HTTP status: %d", err.Error(), status)}
+		if err := p.checkAuthorization(query, headers); err != nil {
+			return &OTSClientError{Message: fmt.Sprintf("%s HTTP status: %d", err.Error(), status)}
 		}
 	}
 
 	if status >= 200 && status < 300 {
-		return data, nil
+		return nil
 	}
 
-	requestID := headers.Get(HeaderOTSRequestID)
+	requestID, _ := headers[HeaderOTSRequestID]
 	pbError := &protobuf.Error{}
-	if err = proto.Unmarshal(data, pbError); err != nil {
-		return nil, &OTSClientError{Status: status, Message: fmt.Sprintf("HTTP status: %s", status)}
+	if err := proto.Unmarshal(data, pbError); err != nil {
+		return &OTSClientError{Status: status, Message: fmt.Sprintf("HTTP status: %s", status)}
 	}
 
 	errorCode := pbError.GetCode()
 	errorMessage := pbError.GetMessage()
 
 	if status == 403 && errorCode != "OTSAuthFailed" {
-		authError := p.checkAuthorization(query, newHeaders)
+		authError := p.checkAuthorization(query, headers)
 		if authError != nil {
-			return nil, &OTSClientError{Status: status, Message: fmt.Sprintf("%s HTTP status: %d", authError.Error(), status)}
+			return &OTSClientError{Status: status, Message: fmt.Sprintf("%s HTTP status: %d", authError.Error(), status)}
 		}
 	}
 
-	return nil, &OTSServiceError{
+	return &OTSServiceError{
 		Status:    status,
 		Code:      errorCode,
 		Message:   errorMessage,

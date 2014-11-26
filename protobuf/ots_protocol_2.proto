@@ -1,4 +1,4 @@
-package com.aliyun.cloudservice.ots2;
+package protobuf;
 
 message Error {
     required string code = 1;

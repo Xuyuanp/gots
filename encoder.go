@@ -22,9 +22,23 @@ import (
 )
 
 type Encoder struct {
+	encoding string
 }
 
 func (e *Encoder) EncodeListTable() (proto.Message, error) {
 	listTableRequest := &protobuf.ListTableRequest{}
 	return listTableRequest, nil
+}
+
+func (e *Encoder) EncodeDescribeTable(name string) (proto.Message, error) {
+	dtr := &protobuf.DescribeTableRequest{}
+	dtr.TableName = &name
+	return dtr, nil
+}
+
+func (e *Encoder) EncodeUpdateTable(name string, rt *ReservedThroughput) (proto.Message, error) {
+	updateTableRequest := &protobuf.UpdateTableRequest{}
+	updateTableRequest.TableName = &name
+	updateTableRequest.ReservedThroughput = rt.Unparse()
+	return updateTableRequest, nil
 }

@@ -3,7 +3,7 @@
 // DO NOT EDIT!
 
 /*
-Package com_aliyun_cloudservice_ots2 is a generated protocol buffer package.
+Package protobuf is a generated protocol buffer package.
 
 It is generated from these files:
 	ots_protocol_2.proto
@@ -243,7 +243,7 @@ func (m *Error) GetMessage() string {
 
 type ColumnSchema struct {
 	Name             *string     `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	Type             *ColumnType `protobuf:"varint,2,req,name=type,enum=com.aliyun.cloudservice.ots2.ColumnType" json:"type,omitempty"`
+	Type             *ColumnType `protobuf:"varint,2,req,name=type,enum=protobuf.ColumnType" json:"type,omitempty"`
 	XXX_unrecognized []byte      `json:"-"`
 }
 
@@ -266,7 +266,7 @@ func (m *ColumnSchema) GetType() ColumnType {
 }
 
 type ColumnValue struct {
-	Type             *ColumnType `protobuf:"varint,1,req,name=type,enum=com.aliyun.cloudservice.ots2.ColumnType" json:"type,omitempty"`
+	Type             *ColumnType `protobuf:"varint,1,req,name=type,enum=protobuf.ColumnType" json:"type,omitempty"`
 	VInt             *int64      `protobuf:"varint,2,opt,name=v_int" json:"v_int,omitempty"`
 	VString          *string     `protobuf:"bytes,3,opt,name=v_string" json:"v_string,omitempty"`
 	VBool            *bool       `protobuf:"varint,4,opt,name=v_bool" json:"v_bool,omitempty"`
@@ -394,7 +394,7 @@ func (m *TableMeta) GetPrimaryKey() []*ColumnSchema {
 }
 
 type Condition struct {
-	RowExistence     *RowExistenceExpectation `protobuf:"varint,1,req,name=row_existence,enum=com.aliyun.cloudservice.ots2.RowExistenceExpectation" json:"row_existence,omitempty"`
+	RowExistence     *RowExistenceExpectation `protobuf:"varint,1,req,name=row_existence,enum=protobuf.RowExistenceExpectation" json:"row_existence,omitempty"`
 	XXX_unrecognized []byte                   `json:"-"`
 }
 
@@ -727,7 +727,7 @@ func (m *GetRowResponse) GetRow() *Row {
 }
 
 type ColumnUpdate struct {
-	Type             *OperationType `protobuf:"varint,1,req,name=type,enum=com.aliyun.cloudservice.ots2.OperationType" json:"type,omitempty"`
+	Type             *OperationType `protobuf:"varint,1,req,name=type,enum=protobuf.OperationType" json:"type,omitempty"`
 	Name             *string        `protobuf:"bytes,2,req,name=name" json:"name,omitempty"`
 	Value            *ColumnValue   `protobuf:"bytes,3,opt,name=value" json:"value,omitempty"`
 	XXX_unrecognized []byte         `json:"-"`
@@ -1304,7 +1304,7 @@ func (m *BatchWriteRowResponse) GetTables() []*TableInBatchWriteRowResponse {
 
 type GetRangeRequest struct {
 	TableName                *string    `protobuf:"bytes,1,req,name=table_name" json:"table_name,omitempty"`
-	Direction                *Direction `protobuf:"varint,2,req,name=direction,enum=com.aliyun.cloudservice.ots2.Direction" json:"direction,omitempty"`
+	Direction                *Direction `protobuf:"varint,2,req,name=direction,enum=protobuf.Direction" json:"direction,omitempty"`
 	ColumnsToGet             []string   `protobuf:"bytes,3,rep,name=columns_to_get" json:"columns_to_get,omitempty"`
 	Limit                    *int32     `protobuf:"varint,4,opt,name=limit" json:"limit,omitempty"`
 	InclusiveStartPrimaryKey []*Column  `protobuf:"bytes,5,rep,name=inclusive_start_primary_key" json:"inclusive_start_primary_key,omitempty"`
@@ -1391,8 +1391,8 @@ func (m *GetRangeResponse) GetRows() []*Row {
 }
 
 func init() {
-	proto.RegisterEnum("com.aliyun.cloudservice.ots2.ColumnType", ColumnType_name, ColumnType_value)
-	proto.RegisterEnum("com.aliyun.cloudservice.ots2.RowExistenceExpectation", RowExistenceExpectation_name, RowExistenceExpectation_value)
-	proto.RegisterEnum("com.aliyun.cloudservice.ots2.OperationType", OperationType_name, OperationType_value)
-	proto.RegisterEnum("com.aliyun.cloudservice.ots2.Direction", Direction_name, Direction_value)
+	proto.RegisterEnum("protobuf.ColumnType", ColumnType_name, ColumnType_value)
+	proto.RegisterEnum("protobuf.RowExistenceExpectation", RowExistenceExpectation_name, RowExistenceExpectation_value)
+	proto.RegisterEnum("protobuf.OperationType", OperationType_name, OperationType_value)
+	proto.RegisterEnum("protobuf.Direction", Direction_name, Direction_value)
 }
