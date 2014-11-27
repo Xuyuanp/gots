@@ -259,6 +259,10 @@ type ListTableResponse struct {
 type DeleteTableResponse struct {
 }
 
+func (dtr *DeleteTableResponse) Parse(pbDTR *protobuf.DeleteTableResponse) *DeleteTableResponse {
+	return dtr
+}
+
 type GetRowResponse struct {
 	Consumed *ConsumedCapacity
 	Row      *Row

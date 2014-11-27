@@ -128,8 +128,16 @@ func (c *Client) CreateTable(meta *TableMeta, rt *ReservedThroughput) (*CreateTa
 	return c.decoder.DecodeCreateTable(data)
 }
 
-func (c *Client) DeleteTable(name string) error {
-	return nil
+func (c *Client) DeleteTable(name string) (*DeleteTableResponse, error) {
+	message, err := c.encoder.EncodeDeleteTable(name)
+	if err != nil {
+		return nil, err
+	}
+	data, err := c.Visit("DeleteTable", message)
+	if err != nil {
+		return nil, err
+	}
+	return c.decoder.DecodeDeleteTable(data)
 }
 
 func (c *Client) DescribeTable(name string) (*TableMeta, *ReservedThoughputDetails, error) {

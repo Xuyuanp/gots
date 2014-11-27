@@ -65,3 +65,13 @@ func (d *Decoder) DecodeCreateTable(data []byte) (*CreateTableResponse, error) {
 	ctr := (&CreateTableResponse{}).Parse(pbCTR)
 	return ctr, nil
 }
+
+func (d *Decoder) DecodeDeleteTable(data []byte) (*DeleteTableResponse, error) {
+	pbDTR := &protobuf.DeleteTableResponse{}
+	err := proto.Unmarshal(data, pbDTR)
+	if err != nil {
+		return nil, err
+	}
+	dtr := (&DeleteTableResponse{}).Parse(pbDTR)
+	return dtr, nil
+}

@@ -31,8 +31,10 @@ func (e *Encoder) EncodeListTable() (proto.Message, error) {
 }
 
 func (e *Encoder) EncodeDescribeTable(name string) (proto.Message, error) {
-	dtr := &protobuf.DescribeTableRequest{}
-	dtr.TableName = &name
+	dtr := &protobuf.DescribeTableRequest{
+		TableName: new(string),
+	}
+	*dtr.TableName = name
 	return dtr, nil
 }
 
@@ -49,4 +51,12 @@ func (e *Encoder) EncodeCreateTable(tm *TableMeta, rt *ReservedThroughput) (prot
 		ReservedThroughput: rt.Unparse(),
 	}
 	return createTableRequest, nil
+}
+
+func (e *Encoder) EncodeDeleteTable(name string) (proto.Message, error) {
+	dtr := &protobuf.DeleteTableRequest{
+		TableName: new(string),
+	}
+	*dtr.TableName = name
+	return dtr, nil
 }
