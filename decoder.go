@@ -75,3 +75,24 @@ func (d *Decoder) DecodeDeleteTable(data []byte) (*DeleteTableResponse, error) {
 	dtr := (&DeleteTableResponse{}).Parse(pbDTR)
 	return dtr, nil
 }
+
+func (d *Decoder) DecodePutRow(data []byte) (*PutRowResponse, error) {
+	pbPRR := &protobuf.PutRowResponse{}
+	err := proto.Unmarshal(data, pbPRR)
+	if err != nil {
+		return nil, err
+	}
+	prr := (&PutRowResponse{}).Parse(pbPRR)
+	return prr, nil
+}
+
+//
+// func (d *Decoder) DecodeGetRow(data []byte) (*GetRowResponse, error) {
+// 	pbGRR := &protobuf.GetRowResponse{}
+// 	err := proto.Unmarshal(data, pbGRR)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	grr := (&GetRowResponse{}).Parse(pbGRR)
+// 	return grr, nil
+// }

@@ -169,9 +169,18 @@ func (c *Client) UpdateTable(name string, reservedThroughput *ReservedThroughput
 // 	return nil, nil, nil, nil
 // }
 //
-// func (c *Client) PutRow(name string, condition *Condition, primaryKeys []PrimaryKey, columns map[string]interface{}) (consumed *CapacityUnit, err error) {
-// 	return nil, nil
-// }
+func (c *Client) PutRow(name string, condition *Condition, primaryKey []*Column, columns []*Column) (response *PutRowResponse, err error) {
+	message, err := c.encoder.EncodePutRow(name, condition, primaryKey, columns)
+	if err != nil {
+		return nil, err
+	}
+	data, err := c.Visit("PutRow", message)
+	if err != nil {
+		return nil, err
+	}
+	return c.decoder.DecodePutRow(data)
+}
+
 //
 // func (c *Client) UpdateRow(name string, condition *Condition, primaryKeys []PrimaryKey, columns map[string]interface{}) (consumed *CapacityUnit, err error) {
 // 	return nil, nil

@@ -54,6 +54,12 @@ func (t ColumnType) String() string {
 	return ColumnTypeName[t]
 }
 
+func (t ColumnType) Unparse() *protobuf.ColumnType {
+	pbCT := new(protobuf.ColumnType)
+	*pbCT = protobuf.ColumnType(t)
+	return pbCT
+}
+
 type RowExistenceExpectation int32
 
 const (
@@ -131,17 +137,43 @@ func (cs *ColumnSchema) Parse(pbCS *protobuf.ColumnSchema) *ColumnSchema {
 }
 
 type ColumnValue struct {
-	Type     ColumnType
-	VInt     int64
-	VString  string
-	VBoolean bool
-	VDouble  float64
-	VBinary  []byte
+	Type    ColumnType
+	VInt    int64
+	VString string
+	VBool   bool
+	VDouble float64
+	VBinary []byte
+}
+
+func (cv *ColumnValue) Unparse() *protobuf.ColumnValue {
+	pbCV := &protobuf.ColumnValue{
+		Type:    cv.Type.Unparse(),
+		VInt:    new(int64),
+		VString: new(string),
+		VBool:   new(bool),
+		VDouble: new(float64),
+		VBinary: make([]byte, len(cv.VBinary)),
+	}
+	*pbCV.VInt = cv.VInt
+	*pbCV.VString = cv.VString
+	*pbCV.VBool = cv.VBool
+	*pbCV.VDouble = cv.VDouble
+	copy(pbCV.VBinary, cv.VBinary)
+	return pbCV
 }
 
 type Column struct {
 	Name  string
 	Value *ColumnValue
+}
+
+func (col *Column) Unparse() *protobuf.Column {
+	pbCol := &protobuf.Column{
+		Name:  new(string),
+		Value: col.Value.Unparse(),
+	}
+	*pbCol.Name = col.Name
+	return pbCol
 }
 
 type Row struct {
@@ -202,6 +234,14 @@ type Condition struct {
 	RowExistence RowExistenceExpectation
 }
 
+func (c *Condition) Unparse() *protobuf.Condition {
+	pbC := &protobuf.Condition{
+		RowExistence: new(protobuf.RowExistenceExpectation),
+	}
+	*pbC.RowExistence = protobuf.RowExistenceExpectation(c.RowExistence)
+	return pbC
+}
+
 type ReservedThroughput struct {
 	CapacityUnit *CapacityUnit
 }
@@ -229,6 +269,11 @@ func (rtd *ReservedThoughputDetails) Parse(pbRTD *protobuf.ReservedThroughputDet
 
 type ConsumedCapacity struct {
 	CapacityUnit *CapacityUnit
+}
+
+func (cc *ConsumedCapacity) Parse(pbCC *protobuf.ConsumedCapacity) *ConsumedCapacity {
+	cc.CapacityUnit = (&CapacityUnit{}).Parse(pbCC.GetCapacityUnit())
+	return cc
 }
 
 type CreateTableResponse struct {
@@ -280,6 +325,11 @@ type UpdateRowResponse struct {
 
 type PutRowResponse struct {
 	Consumed *ConsumedCapacity
+}
+
+func (prr *PutRowResponse) Parse(pbPRR *protobuf.PutRowResponse) *PutRowResponse {
+	prr.Consumed = (&ConsumedCapacity{}).Parse(pbPRR.GetConsumed())
+	return prr
 }
 
 type DeleteRowResponse struct {
