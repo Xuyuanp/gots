@@ -164,11 +164,18 @@ func (c *Client) UpdateTable(name string, reservedThroughput *ReservedThroughput
 	return c.decoder.DecodeUpdateTable(data)
 }
 
-//
-// func (c *Client) GetRow(name string, primaryKeys []PrimaryKey, columns []string) (consumed *CapacityUnit, primaryCols map[string]interface{}, attributeCols map[string]interface{}, err error) {
-// 	return nil, nil, nil, nil
-// }
-//
+func (c *Client) GetRow(name string, primaryKey []*Column, columnNames []string) (*GetRowResponse, error) {
+	message, err := c.encoder.EncodeGetRow(name, primaryKey, columnNames)
+	if err != nil {
+		return nil, err
+	}
+	data, err := c.Visit("GetRow", message)
+	if err != nil {
+		return nil, err
+	}
+	return c.decoder.DecodeGetRow(data)
+}
+
 func (c *Client) PutRow(name string, condition *Condition, primaryKey []*Column, columns []*Column) (response *PutRowResponse, err error) {
 	message, err := c.encoder.EncodePutRow(name, condition, primaryKey, columns)
 	if err != nil {

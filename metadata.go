@@ -145,6 +145,16 @@ type ColumnValue struct {
 	VBinary []byte
 }
 
+func (cv *ColumnValue) Parse(pbCV *protobuf.ColumnValue) *ColumnValue {
+	cv.Type = ColumnType(pbCV.GetType())
+	cv.VInt = pbCV.GetVInt()
+	cv.VString = pbCV.GetVString()
+	cv.VBool = pbCV.GetVBool()
+	cv.VDouble = pbCV.GetVDouble()
+	cv.VBinary = pbCV.GetVBinary()
+	return cv
+}
+
 func (cv *ColumnValue) Unparse() *protobuf.ColumnValue {
 	pbCV := &protobuf.ColumnValue{
 		Type:    cv.Type.Unparse(),
@@ -167,6 +177,12 @@ type Column struct {
 	Value *ColumnValue
 }
 
+func (col *Column) Parse(pbCol *protobuf.Column) *Column {
+	col.Name = pbCol.GetName()
+	col.Value = (&ColumnValue{}).Parse(pbCol.GetValue())
+	return col
+}
+
 func (col *Column) Unparse() *protobuf.Column {
 	pbCol := &protobuf.Column{
 		Name:  new(string),
@@ -179,6 +195,18 @@ func (col *Column) Unparse() *protobuf.Column {
 type Row struct {
 	PrimaryKeyColumns []*Column
 	AttributeColumns  []*Column
+}
+
+func (r *Row) Parse(pbRow *protobuf.Row) *Row {
+	r.PrimaryKeyColumns = make([]*Column, len(pbRow.GetPrimaryKeyColumns()))
+	r.AttributeColumns = make([]*Column, len(pbRow.GetAttributeColumns()))
+	for i, col := range pbRow.GetPrimaryKeyColumns() {
+		r.PrimaryKeyColumns[i] = (&Column{}).Parse(col)
+	}
+	for i, col := range pbRow.GetAttributeColumns() {
+		r.AttributeColumns[i] = (&Column{}).Parse(col)
+	}
+	return r
 }
 
 type TableMeta struct {
@@ -311,6 +339,12 @@ func (dtr *DeleteTableResponse) Parse(pbDTR *protobuf.DeleteTableResponse) *Dele
 type GetRowResponse struct {
 	Consumed *ConsumedCapacity
 	Row      *Row
+}
+
+func (grr *GetRowResponse) Parse(pbGRR *protobuf.GetRowResponse) *GetRowResponse {
+	grr.Consumed = (&ConsumedCapacity{}).Parse(pbGRR.GetConsumed())
+	grr.Row = (&Row{}).Parse(pbGRR.GetRow())
+	return grr
 }
 
 type ColumnUpdate struct {

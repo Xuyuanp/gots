@@ -61,6 +61,19 @@ func (e *Encoder) EncodeDeleteTable(name string) (proto.Message, error) {
 	return dtr, nil
 }
 
+func (e *Encoder) EncodeGetRow(name string, primaryKey []*Column, columnNames []string) (proto.Message, error) {
+	pbGRR := &protobuf.GetRowRequest{
+		TableName:    new(string),
+		PrimaryKey:   make([]*protobuf.Column, len(primaryKey)),
+		ColumnsToGet: columnNames,
+	}
+	*pbGRR.TableName = name
+	for i, pk := range primaryKey {
+		pbGRR.PrimaryKey[i] = pk.Unparse()
+	}
+	return pbGRR, nil
+}
+
 func (e *Encoder) EncodePutRow(name string, condition *Condition, primaryKey []*Column, columns []*Column) (proto.Message, error) {
 	pbPR := &protobuf.PutRowRequest{
 		TableName:        new(string),
