@@ -97,3 +97,16 @@ func (e *Encoder) EncodePutRow(name string, condition *Condition, primaryKey map
 	}
 	return pbPR, nil
 }
+
+func (e *Encoder) EncodeDeleteRow(name string, condition *Condition, primaryKey map[string]interface{}) (proto.Message, error) {
+	pbDRR := &protobuf.DeleteRowRequest{
+		TableName:  new(string),
+		Condition:  condition.Unparse(),
+		PrimaryKey: make([]*protobuf.Column, len(primaryKey)),
+	}
+	*pbDRR.TableName = name
+	for i, pk := range ColumnsFromMap(primaryKey) {
+		pbDRR.PrimaryKey[i] = pk.Unparse()
+	}
+	return pbDRR, nil
+}

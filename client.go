@@ -200,6 +200,19 @@ func (c *Client) PutRow(name string, condition *Condition, primaryKey map[string
 // 	}
 // 	return c.decoder.DecodeUpdateRow(data)
 // }
+
+func (c *Client) DeleteRow(name string, condition *Condition, primaryKey map[string]interface{}) (*DeleteRowResponse, error) {
+	message, err := c.encoder.EncodeDeleteRow(name, condition, primaryKey)
+	if err != nil {
+		return nil, err
+	}
+	data, err := c.Visit("DeleteRow", message)
+	if err != nil {
+		return nil, err
+	}
+	return c.decoder.DecodeDeleteRow(data)
+}
+
 // func (c *Client) BatchGetRow([]map[string]interface{}) (items [][]RowDataItem, err error) {
 // 	return nil, nil
 // }
