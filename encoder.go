@@ -110,3 +110,39 @@ func (e *Encoder) EncodeDeleteRow(name string, condition *Condition, primaryKey 
 	}
 	return pbDRR, nil
 }
+
+func (e *Encoder) EncodeUpdateRow(name string, condition *Condition, primaryKey map[string]interface{}, columnsPut map[string]interface{}, columnsDelete []string) (proto.Message, error) {
+	pbURR := &protobuf.UpdateRowRequest{
+		TableName:        new(string),
+		Condition:        condition.Unparse(),
+		PrimaryKey:       make([]*protobuf.Column, len(primaryKey)),
+		AttributeColumns: make([]*protobuf.ColumnUpdate, len(columnsPut)+len(columnsDelete)),
+	}
+	*pbURR.TableName = name
+	for i, pk := range ColumnsFromMap(primaryKey) {
+		pbURR.GetPrimaryKey()[i] = pk.Unparse()
+	}
+	index := 0
+	for k, v := range columnsPut {
+		pbCU := &protobuf.ColumnUpdate{
+			Name:  new(string),
+			Type:  new(protobuf.OperationType),
+			Value: NewColumnValue(v).Unparse(),
+		}
+		*pbCU.Name = k
+		*pbCU.Type = protobuf.OperationType_PUT
+		pbURR.GetAttributeColumns()[index] = pbCU
+		index++
+	}
+	for _, n := range columnsDelete {
+		pbCU := &protobuf.ColumnUpdate{
+			Name: new(string),
+			Type: new(protobuf.OperationType),
+		}
+		*pbCU.Name = n
+		*pbCU.Type = protobuf.OperationType_DELETE
+		pbURR.GetAttributeColumns()[index] = pbCU
+		index++
+	}
+	return pbURR, nil
+}

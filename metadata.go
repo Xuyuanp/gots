@@ -404,6 +404,11 @@ type UpdateRowResponse struct {
 	Consumed *ConsumedCapacity
 }
 
+func (urr *UpdateRowResponse) Parse(pbURR *protobuf.UpdateRowResponse) *UpdateRowResponse {
+	urr.Consumed = (&ConsumedCapacity{}).Parse(pbURR.GetConsumed())
+	return urr
+}
+
 type PutRowResponse struct {
 	Consumed *ConsumedCapacity
 }

@@ -105,3 +105,13 @@ func (d *Decoder) DecodeDeleteRow(data []byte) (*DeleteRowResponse, error) {
 	drr := (&DeleteRowResponse{}).Parse(pbDRR)
 	return drr, nil
 }
+
+func (d *Decoder) DecodeUpdateRow(data []byte) (*UpdateRowResponse, error) {
+	pbURR := &protobuf.UpdateRowResponse{}
+	err := proto.Unmarshal(data, pbURR)
+	if err != nil {
+		return nil, err
+	}
+	urr := (&UpdateRowResponse{}).Parse(pbURR)
+	return urr, nil
+}

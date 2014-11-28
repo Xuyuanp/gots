@@ -188,18 +188,17 @@ func (c *Client) PutRow(name string, condition *Condition, primaryKey map[string
 	return c.decoder.DecodePutRow(data)
 }
 
-//
-// func (c *Client) UpdateRow(name string, condition *Condition, primaryKey []Column, columnsPut map[string]interface{}, columnsDelete []string) (*UpdateRowResponse, error) {
-// 	message, err := c.encoder.EncodeUpdateRow(name, condition, primaryKey, columnsPut, columnsDelete)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	data, err := c.Visit("UpdateRow", message)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return c.decoder.DecodeUpdateRow(data)
-// }
+func (c *Client) UpdateRow(name string, condition *Condition, primaryKey map[string]interface{}, columnsPut map[string]interface{}, columnsDelete []string) (*UpdateRowResponse, error) {
+	message, err := c.encoder.EncodeUpdateRow(name, condition, primaryKey, columnsPut, columnsDelete)
+	if err != nil {
+		return nil, err
+	}
+	data, err := c.Visit("UpdateRow", message)
+	if err != nil {
+		return nil, err
+	}
+	return c.decoder.DecodeUpdateRow(data)
+}
 
 func (c *Client) DeleteRow(name string, condition *Condition, primaryKey map[string]interface{}) (*DeleteRowResponse, error) {
 	message, err := c.encoder.EncodeDeleteRow(name, condition, primaryKey)
