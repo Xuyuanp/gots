@@ -145,6 +145,39 @@ type ColumnValue struct {
 	VBinary []byte
 }
 
+func NewColumnValue(v interface{}) *ColumnValue {
+	cv := &ColumnValue{}
+	switch v.(type) {
+	case int64:
+		cv.Type = ColumnTypeInteger
+		cv.VInt = v.(int64)
+	case int:
+		cv.Type = ColumnTypeInteger
+		cv.VInt = int64(v.(int))
+	case int32:
+		cv.Type = ColumnTypeInteger
+		cv.VInt = int64(v.(int32))
+	case string:
+		cv.Type = ColumnTypeString
+		cv.VString = v.(string)
+	case float64:
+		cv.Type = ColumnTypeDouble
+		cv.VDouble = v.(float64)
+	case float32:
+		cv.Type = ColumnTypeDouble
+		cv.VDouble = float64(v.(float32))
+	case bool:
+		cv.Type = ColumnTypeBoolean
+		cv.VBool = v.(bool)
+	case []byte:
+		cv.Type = ColumnTypeBinary
+		cv.VBinary = v.([]byte)
+	default:
+		cv = nil
+	}
+	return cv
+}
+
 func (cv *ColumnValue) Parse(pbCV *protobuf.ColumnValue) *ColumnValue {
 	cv.Type = ColumnType(pbCV.GetType())
 	cv.VInt = pbCV.GetVInt()
@@ -175,6 +208,20 @@ func (cv *ColumnValue) Unparse() *protobuf.ColumnValue {
 type Column struct {
 	Name  string
 	Value *ColumnValue
+}
+
+func ColumnsFromMap(colMap map[string]interface{}) []*Column {
+	columns := make([]*Column, len(colMap))
+	index := 0
+	for k, v := range colMap {
+		col := &Column{
+			Name:  k,
+			Value: NewColumnValue(v),
+		}
+		columns[index] = col
+		index++
+	}
+	return columns
 }
 
 func (col *Column) Parse(pbCol *protobuf.Column) *Column {
@@ -368,6 +415,11 @@ func (prr *PutRowResponse) Parse(pbPRR *protobuf.PutRowResponse) *PutRowResponse
 
 type DeleteRowResponse struct {
 	Consumed *ConsumedCapacity
+}
+
+func (drr *DeleteRowResponse) Parse(pbDRR *protobuf.DeleteRowResponse) *DeleteRowResponse {
+	drr.Consumed = (&ConsumedCapacity{}).Parse(pbDRR.GetConsumed())
+	return drr
 }
 
 type BatchGetRowItem struct {

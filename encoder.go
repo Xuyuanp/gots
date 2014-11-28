@@ -45,7 +45,11 @@ func (e *Encoder) EncodeUpdateTable(name string, rt *ReservedThroughput) (proto.
 	return updateTableRequest, nil
 }
 
-func (e *Encoder) EncodeCreateTable(tm *TableMeta, rt *ReservedThroughput) (proto.Message, error) {
+func (e *Encoder) EncodeCreateTable(name string, primaryKey []*ColumnSchema, rt *ReservedThroughput) (proto.Message, error) {
+	tm := &TableMeta{
+		TableName:  name,
+		PrimaryKey: primaryKey,
+	}
 	createTableRequest := &protobuf.CreateTableRequest{
 		TableMeta:          tm.Unparse(),
 		ReservedThroughput: rt.Unparse(),
@@ -61,31 +65,34 @@ func (e *Encoder) EncodeDeleteTable(name string) (proto.Message, error) {
 	return dtr, nil
 }
 
-func (e *Encoder) EncodeGetRow(name string, primaryKey []*Column, columnNames []string) (proto.Message, error) {
+func (e *Encoder) EncodeGetRow(name string, primaryKey map[string]interface{}, columnNames []string) (proto.Message, error) {
+	pk := ColumnsFromMap(primaryKey)
 	pbGRR := &protobuf.GetRowRequest{
 		TableName:    new(string),
-		PrimaryKey:   make([]*protobuf.Column, len(primaryKey)),
+		PrimaryKey:   make([]*protobuf.Column, len(pk)),
 		ColumnsToGet: columnNames,
 	}
 	*pbGRR.TableName = name
-	for i, pk := range primaryKey {
-		pbGRR.PrimaryKey[i] = pk.Unparse()
+	for i, p := range pk {
+		pbGRR.PrimaryKey[i] = p.Unparse()
 	}
 	return pbGRR, nil
 }
 
-func (e *Encoder) EncodePutRow(name string, condition *Condition, primaryKey []*Column, columns []*Column) (proto.Message, error) {
+func (e *Encoder) EncodePutRow(name string, condition *Condition, primaryKey map[string]interface{}, columns map[string]interface{}) (proto.Message, error) {
+	pk := ColumnsFromMap(primaryKey)
+	cols := ColumnsFromMap(columns)
 	pbPR := &protobuf.PutRowRequest{
 		TableName:        new(string),
 		Condition:        condition.Unparse(),
-		PrimaryKey:       make([]*protobuf.Column, len(primaryKey)),
-		AttributeColumns: make([]*protobuf.Column, len(columns)),
+		PrimaryKey:       make([]*protobuf.Column, len(pk)),
+		AttributeColumns: make([]*protobuf.Column, len(cols)),
 	}
 	*pbPR.TableName = name
-	for i, pk := range primaryKey {
-		pbPR.PrimaryKey[i] = pk.Unparse()
+	for i, p := range pk {
+		pbPR.PrimaryKey[i] = p.Unparse()
 	}
-	for i, col := range columns {
+	for i, col := range cols {
 		pbPR.AttributeColumns[i] = col.Unparse()
 	}
 	return pbPR, nil

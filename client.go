@@ -116,8 +116,8 @@ func (c *Client) ListTable() (names []string, err error) {
 	return c.decoder.DecodeListTable(data)
 }
 
-func (c *Client) CreateTable(meta *TableMeta, rt *ReservedThroughput) (*CreateTableResponse, error) {
-	message, err := c.encoder.EncodeCreateTable(meta, rt)
+func (c *Client) CreateTable(name string, primaryKey []*ColumnSchema, rt *ReservedThroughput) (*CreateTableResponse, error) {
+	message, err := c.encoder.EncodeCreateTable(name, primaryKey, rt)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (c *Client) UpdateTable(name string, reservedThroughput *ReservedThroughput
 	return c.decoder.DecodeUpdateTable(data)
 }
 
-func (c *Client) GetRow(name string, primaryKey []*Column, columnNames []string) (*GetRowResponse, error) {
+func (c *Client) GetRow(name string, primaryKey map[string]interface{}, columnNames []string) (*GetRowResponse, error) {
 	message, err := c.encoder.EncodeGetRow(name, primaryKey, columnNames)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func (c *Client) GetRow(name string, primaryKey []*Column, columnNames []string)
 	return c.decoder.DecodeGetRow(data)
 }
 
-func (c *Client) PutRow(name string, condition *Condition, primaryKey []*Column, columns []*Column) (response *PutRowResponse, err error) {
+func (c *Client) PutRow(name string, condition *Condition, primaryKey map[string]interface{}, columns map[string]interface{}) (response *PutRowResponse, err error) {
 	message, err := c.encoder.EncodePutRow(name, condition, primaryKey, columns)
 	if err != nil {
 		return nil, err
@@ -189,14 +189,17 @@ func (c *Client) PutRow(name string, condition *Condition, primaryKey []*Column,
 }
 
 //
-// func (c *Client) UpdateRow(name string, condition *Condition, primaryKeys []PrimaryKey, columns map[string]interface{}) (consumed *CapacityUnit, err error) {
-// 	return nil, nil
+// func (c *Client) UpdateRow(name string, condition *Condition, primaryKey []Column, columnsPut map[string]interface{}, columnsDelete []string) (*UpdateRowResponse, error) {
+// 	message, err := c.encoder.EncodeUpdateRow(name, condition, primaryKey, columnsPut, columnsDelete)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	data, err := c.Visit("UpdateRow", message)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return c.decoder.DecodeUpdateRow(data)
 // }
-//
-// func (c *Client) DeleteRow(name string, condition *Condition, primaryKeys []PrimaryKey) (consumed *CapacityUnit, err error) {
-// 	return nil, nil
-// }
-//
 // func (c *Client) BatchGetRow([]map[string]interface{}) (items [][]RowDataItem, err error) {
 // 	return nil, nil
 // }
