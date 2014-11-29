@@ -114,6 +114,27 @@ var DirectionValue = map[string]Direction{
 	"BACKWARD": DirectionBackward,
 }
 
+type Error struct {
+	Code    string
+	Message string
+}
+
+func (e *Error) Parse(pbE *protobuf.Error) *Error {
+	e.Code = pbE.GetCode()
+	e.Message = pbE.GetMessage()
+	return e
+}
+
+func (e *Error) Unparse() *protobuf.Error {
+	pbE := &protobuf.Error{
+		Code:    new(string),
+		Message: new(string),
+	}
+	*pbE.Code = e.Code
+	*pbE.Message = e.Message
+	return pbE
+}
+
 type ColumnSchema struct {
 	Name string
 	Type ColumnType
@@ -428,20 +449,23 @@ func (drr *DeleteRowResponse) Parse(pbDRR *protobuf.DeleteRowResponse) *DeleteRo
 }
 
 type BatchGetRowItem struct {
-	PrimaryKey []*Column
-}
-
-type BatchGetRowTableItem struct {
-	TableName    string
-	Rows         []*BatchGetRowItem
-	ColumnsToGet []string
+	PrimaryKeys []map[string]interface{}
+	ColumnNames []string
 }
 
 type RowInBatchGetRowResponse struct {
 	IsOk     bool
-	Error    error
+	Error    *Error
 	Consumed *ConsumedCapacity
 	Row      *Row
+}
+
+func (rgrr *RowInBatchGetRowResponse) Parse(pbRGRR *protobuf.RowInBatchGetRowResponse) *RowInBatchGetRowResponse {
+	rgrr.IsOk = pbRGRR.GetIsOk()
+	rgrr.Consumed = (&ConsumedCapacity{}).Parse(pbRGRR.GetConsumed())
+	rgrr.Row = (&Row{}).Parse(pbRGRR.GetRow())
+	rgrr.Error = (&Error{}).Parse(pbRGRR.GetError())
+	return rgrr
 }
 
 type TableInBatchGetRowResponse struct {
@@ -449,13 +473,30 @@ type TableInBatchGetRowResponse struct {
 	Rows      []*RowInBatchGetRowResponse
 }
 
+func (tgrr *TableInBatchGetRowResponse) Parse(pbTGRR *protobuf.TableInBatchGetRowResponse) *TableInBatchGetRowResponse {
+	tgrr.TableName = pbTGRR.GetTableName()
+	tgrr.Rows = make([]*RowInBatchGetRowResponse, len(pbTGRR.GetRows()))
+	for i, row := range pbTGRR.GetRows() {
+		tgrr.Rows[i] = (&RowInBatchGetRowResponse{}).Parse(row)
+	}
+	return tgrr
+}
+
 type BatchGetRowResponse struct {
 	Tables []*TableInBatchGetRowResponse
 }
 
+func (bgrr *BatchGetRowResponse) Parse(pbBGRR *protobuf.BatchGetRowResponse) *BatchGetRowResponse {
+	bgrr.Tables = make([]*TableInBatchGetRowResponse, len(pbBGRR.GetTables()))
+	for i, t := range pbBGRR.GetTables() {
+		bgrr.Tables[i] = (&TableInBatchGetRowResponse{}).Parse(t)
+	}
+	return bgrr
+}
+
 type RowInBatchWriteRowResponse struct {
 	IsOk     bool
-	Error    error
+	Error    *Error
 	Consumed *ConsumedCapacity
 }
 

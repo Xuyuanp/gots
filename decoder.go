@@ -115,3 +115,13 @@ func (d *Decoder) DecodeUpdateRow(data []byte) (*UpdateRowResponse, error) {
 	urr := (&UpdateRowResponse{}).Parse(pbURR)
 	return urr, nil
 }
+
+func (d *Decoder) DecodeBatchGetRow(data []byte) (*BatchGetRowResponse, error) {
+	pbBGRR := &protobuf.BatchGetRowResponse{}
+	err := proto.Unmarshal(data, pbBGRR)
+	if err != nil {
+		return nil, err
+	}
+	bgrr := (&BatchGetRowResponse{}).Parse(pbBGRR)
+	return bgrr, nil
+}

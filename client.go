@@ -212,10 +212,18 @@ func (c *Client) DeleteRow(name string, condition *Condition, primaryKey map[str
 	return c.decoder.DecodeDeleteRow(data)
 }
 
-// func (c *Client) BatchGetRow([]map[string]interface{}) (items [][]RowDataItem, err error) {
-// 	return nil, nil
-// }
-//
+func (c *Client) BatchGetRow(items map[string]BatchGetRowItem) (*BatchGetRowResponse, error) {
+	message, err := c.encoder.EncodeBatchGetRow(items)
+	if err != nil {
+		return nil, err
+	}
+	data, err := c.Visit("BatchGetRow", message)
+	if err != nil {
+		return nil, err
+	}
+	return c.decoder.DecodeBatchGetRow(data)
+}
+
 // func (c *Client) BatchWriteRow(batchList []map[string]interface{}) (items []map[string]interface{}, err error) {
 // 	return nil, nil
 // }

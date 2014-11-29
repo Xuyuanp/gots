@@ -146,3 +146,38 @@ func (e *Encoder) EncodeUpdateRow(name string, condition *Condition, primaryKey 
 	}
 	return pbURR, nil
 }
+
+func (e *Encoder) EncodeBatchGetRow(items map[string]BatchGetRowItem) (proto.Message, error) {
+	pbBGRR := &protobuf.BatchGetRowRequest{
+		Tables: make([]*protobuf.TableInBatchGetRowRequest, len(items)),
+	}
+
+	index := 0
+	for name, bgri := range items {
+		pbTRR := &protobuf.TableInBatchGetRowRequest{
+			TableName:    new(string),
+			Rows:         make([]*protobuf.RowInBatchGetRowRequest, len(bgri.PrimaryKeys)),
+			ColumnsToGet: make([]string, len(bgri.ColumnNames)),
+		}
+		*pbTRR.TableName = name
+
+		for i, pks := range bgri.PrimaryKeys {
+			pbRGRR := &protobuf.RowInBatchGetRowRequest{
+				PrimaryKey: make([]*protobuf.Column, len(pks)),
+			}
+			for j, pk := range ColumnsFromMap(pks) {
+				pbRGRR.GetPrimaryKey()[j] = pk.Unparse()
+			}
+			pbTRR.GetRows()[i] = pbRGRR
+		}
+
+		for i, n := range bgri.ColumnNames {
+			pbTRR.GetColumnsToGet()[i] = n
+		}
+
+		pbBGRR.GetTables()[index] = pbTRR
+		index++
+	}
+
+	return pbBGRR, nil
+}
