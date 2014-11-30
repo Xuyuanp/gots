@@ -226,6 +226,22 @@ func (cv *ColumnValue) Unparse() *protobuf.ColumnValue {
 	return pbCV
 }
 
+func (cv *ColumnValue) Value() interface{} {
+	switch cv.Type {
+	case ColumnTypeString:
+		return cv.VString
+	case ColumnTypeInteger:
+		return cv.VInt
+	case ColumnTypeDouble:
+		return cv.VDouble
+	case ColumnTypeBoolean:
+		return cv.VBool
+	case ColumnTypeBinary:
+		return cv.VBinary
+	}
+	return nil
+}
+
 type Column struct {
 	Name  string
 	Value *ColumnValue
