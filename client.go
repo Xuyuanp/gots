@@ -27,11 +27,15 @@ import (
 )
 
 const (
-	DefaultEncoding      = "utf8"
+	// DefaultEncoding 默认编码
+	DefaultEncoding = "utf8"
+	// DefaultSocketTimeout 默认socket链接过期时间
 	DefaultSocketTimeout = 50
+	// DefaultMaxConnection 默认链接池最大链接数
 	DefaultMaxConnection = 50
 )
 
+// Client 实现了OTS服务的所有接口。用户可以通过NewClient方法创建Client实例
 type Client struct {
 	EndPoint      string
 	AccessID      string
@@ -47,6 +51,12 @@ type Client struct {
 	decoder       *Decoder
 }
 
+// NewClient 方法返回一个Client实例
+// 示例:
+//
+// import "github.com/Xuyuanp/gots
+// client := ots.NewClient("your_instance_endpoint", "your_user_id", "your_user_key", "your_instance_name")
+// client.Init()
 func NewClient(endPoint, accessID, accessKey, instanceName string) *Client {
 	return &Client{
 		EndPoint:      endPoint,
@@ -60,6 +70,7 @@ func NewClient(endPoint, accessID, accessKey, instanceName string) *Client {
 	}
 }
 
+// Init 方法初始化Client，在创建Client实例之后，调用任何访问接口之前必须调用此方法
 func (c *Client) Init() error {
 	c.protocol = &Protocol{
 		EndPoint:     c.EndPoint,
@@ -72,7 +83,7 @@ func (c *Client) Init() error {
 	return nil
 }
 
-func (c *Client) Visit(apiName string, message proto.Message) (data []byte, err error) {
+func (c *Client) vist(apiName string, message proto.Message) (data []byte, err error) {
 	body, err := proto.Marshal(message)
 	if err != nil {
 		return nil, &OTSClientError{Message: fmt.Sprintf("%s Marshal protocol buffer failed", err.Error())}
@@ -97,67 +108,117 @@ func (c *Client) Visit(apiName string, message proto.Message) (data []byte, err 
 
 	headers := response.Header
 	newHeaders := make(map[string]string, len(headers))
-	for k, _ := range headers {
+	for k := range headers {
 		lk := strings.ToLower(k)
 		newHeaders[lk] = headers.Get(k)
 	}
 	return data, c.protocol.ParseResponse(apiName, response.StatusCode, newHeaders, data)
 }
 
+// ListTable 方法用于获取所有表名。
+// 示例:
+//
+// names, err := client.ListTable()
 func (c *Client) ListTable() (names []string, err error) {
 	message, err := c.encoder.EncodeListTable()
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("ListTable", message)
+	data, err := c.vist("ListTable", message)
 	if err != nil {
 		return nil, err
 	}
 	return c.decoder.DecodeListTable(data)
 }
 
+// CreateTable 方法用于创建新表。
+// name: 表名
+// primaryKey: 主键列表
+// rt: 预留读写吞吐量
+// 示例：
+//
+// primaryKey := []*gots.ColumnSchema{
+//      &gots.ColumnSchema{
+//              Name: "gid",
+//              Type: gots.ColumnTypeInteger,
+//      },
+//      &gots.ColumnSchema{
+//              Name: "uid",
+//              Type: gots.ColumnTypeInteger,
+//      },
+// }
+// rt := &gots.ReservedThroughput{
+//      CapacityUnit: &gots.CapacityUnit{
+//              Read:  100,
+//              Write: 100,
+//      },
+// }
+//
+// resp, err := client.CreateTable("sample_table", primaryKey, rt)
 func (c *Client) CreateTable(name string, primaryKey []*ColumnSchema, rt *ReservedThroughput) (*CreateTableResponse, error) {
 	message, err := c.encoder.EncodeCreateTable(name, primaryKey, rt)
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("CreateTable", message)
+	data, err := c.vist("CreateTable", message)
 	if err != nil {
 		return nil, err
 	}
 	return c.decoder.DecodeCreateTable(data)
 }
 
+// DeleteTable 方法用于删除表
+// name: 表名
+// 示例:
+//
+// resp, err := client.DeleteTable("sample_table")
 func (c *Client) DeleteTable(name string) (*DeleteTableResponse, error) {
 	message, err := c.encoder.EncodeDeleteTable(name)
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("DeleteTable", message)
+	data, err := c.vist("DeleteTable", message)
 	if err != nil {
 		return nil, err
 	}
 	return c.decoder.DecodeDeleteTable(data)
 }
 
+// DescribeTable 方法用于获取表描述信息
+// name: 表名
+// 示例:
+//
+// resp, err := client.DescribeTable("sample_table")
 func (c *Client) DescribeTable(name string) (*TableMeta, *ReservedThoughputDetails, error) {
 	message, err := c.encoder.EncodeDescribeTable(name)
 	if err != nil {
 		return nil, nil, err
 	}
-	data, err := c.Visit("DescribeTable", message)
+	data, err := c.vist("DescribeTable", message)
 	if err != nil {
 		return nil, nil, err
 	}
 	return c.decoder.DecodeDescribeTable(data)
 }
 
+// UpdateTable 跟新表属性，目前只支持修改预留读写吞吐量
+// name: 表名
+// reservedThroughput: 预留读写吞吐量
+// 示例:
+//
+// rt := &gots.ReservedThroughput{
+//      CapacityUnit: &gots.CapacityUnit{
+//              Read:  150,
+//              Write: 150,
+//      },
+// }
+// resp, err := client.UpdateTable("sample_table", rt)
 func (c *Client) UpdateTable(name string, reservedThroughput *ReservedThroughput) (*UpdateTableResponse, error) {
 	message, err := c.encoder.EncodeUpdateTable(name, reservedThroughput)
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("UpdateTable", message)
+	data, err := c.vist("UpdateTable", message)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +230,7 @@ func (c *Client) GetRow(name string, primaryKey map[string]interface{}, columnNa
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("GetRow", message)
+	data, err := c.vist("GetRow", message)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +242,7 @@ func (c *Client) PutRow(name string, condition *Condition, primaryKey map[string
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("PutRow", message)
+	data, err := c.vist("PutRow", message)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +254,7 @@ func (c *Client) UpdateRow(name string, condition *Condition, primaryKey map[str
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("UpdateRow", message)
+	data, err := c.vist("UpdateRow", message)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +266,7 @@ func (c *Client) DeleteRow(name string, condition *Condition, primaryKey map[str
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("DeleteRow", message)
+	data, err := c.vist("DeleteRow", message)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +278,7 @@ func (c *Client) BatchGetRow(items map[string]BatchGetRowItem) (*BatchGetRowResp
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.Visit("BatchGetRow", message)
+	data, err := c.vist("BatchGetRow", message)
 	if err != nil {
 		return nil, err
 	}
